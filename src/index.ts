@@ -1,26 +1,31 @@
-import { Web3PluginBase } from "web3";
+import { Contract, Web3PluginBase } from "web3";
 import type { ContractAbi } from "web3";
 import type { CID } from "ipfs-http-client";
-import { promises as fsPromises } from "fs";
+import type { IPFS } from "ipfs-core-types";
+import * as fs from "fs";
 import { create } from "ipfs-http-client";
 
-// import { ABI } from "./abi";
+import { contractABI } from "./abi";
 
 export class IpfsPlugin extends Web3PluginBase {
   public pluginNamespace: string;
-  private ipfsClient;
+  private ipfsClient: IPFS;
 
   public constructor(
     options: {
       pluginNamespace?: string;
       contractAbi?: ContractAbi;
-      ipfsApiUrl?: string;
+      contractAddress?: string;
+      ipfsHost?: string;
     } = {},
   ) {
     super();
     this.pluginNamespace = options.pluginNamespace ?? "ipfs";
     this.ipfsClient = create({
-      url: options.ipfsApiUrl || "http://localhost:5001",
+      host: options.ipfsHost || "localhost",
+      port: 5001,
+      protocol: options.ipfsHost ? "https" : "http",
+      url: options.ipfsHost || "http://localhost:5001",
     });
   }
 
@@ -28,26 +33,21 @@ export class IpfsPlugin extends Web3PluginBase {
     console.log(param);
   }
 
-  public async uploadFile(
-    path: string,
-  ) {
-    const buffer = await fsPromises.readFile(path);
-    console.log(`Uploading file ${path} to IPFS...`);
-    const addedFile = await this.ipfsClient.add(buffer);
-    console.log("Added file CID:", addedFile.cid.toString());
-
-    return await this.storeCID(addedFile.cid);
+  public async uploadFile(filePath: string): Promise<CID> {
+    const file = fs.readFileSync(filePath);
+    console.log(file.toString());
+    const result = await this.ipfsClient.add(file);
+    console.log("Added file CID:", result.cid.toString());
+    return result.cid;
   }
 
-  private async storeCID(cid: CID) {
-    console.log(`Storing CID ${cid} on Ethereum...`);
+  public async storeCID(cid: string) {
+    const _contract = new Contract(
+      contractABI,
+      '0xA683BF985BC560c5dc99e8F33f3340d1e53736EB',
+    );
   }
 
-  public async listCIDs(
-    ethereumAddress: string,
-  ) {
-    console.log(`Listing CIDs for address ${ethereumAddress}...`);
-  }
 }
 
 // Module Augmentation
