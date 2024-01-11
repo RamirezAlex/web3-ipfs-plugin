@@ -19,7 +19,10 @@ describe("IpfsPlugin Tests", () => {
       const PRIVATE_KEY = process.env.ETH_PRIVATE_KEY;
       const PROVIDER_URL = process.env.ETH_PROVIDER_URL;
       web3 = new Web3(PROVIDER_URL);
-      web3.registerPlugin(new IpfsPlugin());
+      web3.registerPlugin(new IpfsPlugin({
+        signerPrivateKey: PRIVATE_KEY,
+        providerUrl: PROVIDER_URL,
+      }));
       consoleSpy = jest.spyOn(global.console, "log").mockImplementation();
 
       const account = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY as any);
@@ -45,6 +48,13 @@ describe("IpfsPlugin Tests", () => {
     it("should store CID on Ethereum blockchain", async () => {
       const cid = "QmQWkR3L1r7J9a1r9c9b4k3w2p8o5Vx3d1Xn1zQy1Q7wKX";
       const tx = await web3.ipfs.storeCID(cid);
+      expect(tx).toBeDefined();
+    }, 50000);
+
+    it("should get CID from Ethereum blockchain", async () => {
+      const accountAddress = "0xB0094a90fd007a94c40f8c53CB9E2AD343768E7f";
+      const result = await web3.ipfs.listCIDs(accountAddress);
+      expect(result).toBeDefined();
     });
   });
 });

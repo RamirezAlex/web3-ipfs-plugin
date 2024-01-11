@@ -1,3 +1,4 @@
+import Web3 from "web3";
 import { Contract, Web3PluginBase } from "web3";
 import type { ContractAbi } from "web3";
 import type { CID } from "ipfs-http-client";
@@ -10,6 +11,9 @@ import { contractABI } from "./abi";
 export class IpfsPlugin extends Web3PluginBase {
   public pluginNamespace: string;
   private ipfsClient: IPFS;
+  private web3: any;
+  private signerPrivateKey: string;
+  private contract: any;
 
   public constructor(
     options: {
@@ -17,6 +21,8 @@ export class IpfsPlugin extends Web3PluginBase {
       contractAbi?: ContractAbi;
       contractAddress?: string;
       ipfsHost?: string;
+      signerPrivateKey?: string;
+      providerUrl?: string;
     } = {},
   ) {
     super();
@@ -27,6 +33,12 @@ export class IpfsPlugin extends Web3PluginBase {
       protocol: options.ipfsHost ? "https" : "http",
       url: options.ipfsHost || "http://localhost:5001",
     });
+    this.signerPrivateKey = options.signerPrivateKey ?? '';
+    this.web3 = new Web3('https://endpoints.omniatech.io/v1/eth/sepolia/public');
+    this.contract = new this.web3.eth.Contract(
+      contractABI,
+      '0xA683BF985BC560c5dc99e8F33f3340d1e53736EB',
+    );
   }
 
   public test(param: string): void {
@@ -42,12 +54,26 @@ export class IpfsPlugin extends Web3PluginBase {
   }
 
   public async storeCID(cid: string) {
-    const _contract = new Contract(
-      contractABI,
-      '0xA683BF985BC560c5dc99e8F33f3340d1e53736EB',
-    );
+
+    const account = this.web3.eth.accounts.privateKeyToAccount(this.signerPrivateKey as any);
+    this.web3.eth.accounts.wallet.add(account);
+    const fromAddress = account.address;
+    return this.contract.methods.store(cid.toString()).send({ from: fromAddress });
   }
 
+  public async listCIDs(ethereumAddress: string) {
+    const events = await this.contract.getPastEvents('ALLEVENTS', {
+      filter: { owner: ethereumAddress },
+      fromBlock: 5064000,
+      toBlock: 'latest'
+    });
+
+    for (const event of events) {
+      console.debug((event as any));
+    }
+
+    return events;
+  }
 }
 
 // Module Augmentation
