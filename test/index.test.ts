@@ -1,6 +1,7 @@
-import { Web3, core } from "web3";
+import Web3, { core } from "web3";
 import { IpfsPlugin } from "../src";
 import * as dotenv from 'dotenv';
+dotenv.config();
 
 describe("IpfsPlugin Tests", () => {
   it("should register IpfsPlugin plugin on Web3Context instance", () => {
@@ -13,30 +14,29 @@ describe("IpfsPlugin Tests", () => {
     let consoleSpy: jest.SpiedFunction<typeof global.console.log>;
 
     let web3: Web3;
-    dotenv.config();
+    const PROVIDER_URL = process.env.ETH_PROVIDER_URL || "http://127.0.0.1:8545";
+    const PRIVATE_KEY = process.env.ETH_PRIVATE_KEY;
 
     beforeAll(() => {
-      const PRIVATE_KEY = process.env.ETH_PRIVATE_KEY;
-      const PROVIDER_URL = process.env.ETH_PROVIDER_URL;
+      consoleSpy = jest.spyOn(global.console, "log").mockImplementation();
+
+      if (!PRIVATE_KEY) {
+        throw new Error("ETH_PRIVATE_KEY environment variable is not set.");
+      }
+
       web3 = new Web3(PROVIDER_URL);
       web3.registerPlugin(new IpfsPlugin({
         signerPrivateKey: PRIVATE_KEY,
         providerUrl: PROVIDER_URL,
       }));
-      consoleSpy = jest.spyOn(global.console, "log").mockImplementation();
 
-      const account = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY as any);
+      const account = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY);
       web3.eth.accounts.wallet.add(account);
       web3.eth.defaultAccount = account.address;
     });
 
     afterAll(() => {
       consoleSpy.mockRestore();
-    });
-
-    it("should call IpfsPlugin test method with expected param", () => {
-      web3.ipfs.test("test-param");
-      expect(consoleSpy).toHaveBeenCalledWith("test-param");
     });
 
     it("should upload file to IPFS", async () => {
@@ -49,10 +49,10 @@ describe("IpfsPlugin Tests", () => {
       const cid = "QmQWkR3L1r7J9a1r9c9b4k3w2p8o5Vx3d1Xn1zQy1Q7wKX";
       const tx = await web3.ipfs.storeCID(cid);
       expect(tx).toBeDefined();
-    }, 50000);
+    }, 80000);
 
     it("should get CID from Ethereum blockchain", async () => {
-      const accountAddress = "0xB0094a90fd007a94c40f8c53CB9E2AD343768E7f";
+      const accountAddress = "0x2805a688C804d49f565523057BE1fe79B4415912";
       const result = await web3.ipfs.listCIDs(accountAddress);
       expect(result).toBeDefined();
     });

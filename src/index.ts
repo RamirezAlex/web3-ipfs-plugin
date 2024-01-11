@@ -1,5 +1,5 @@
-import Web3 from "web3";
-import { Contract, Web3PluginBase } from "web3";
+import Web3, { Contract } from "web3";
+import { Web3PluginBase } from "web3";
 import type { ContractAbi } from "web3";
 import type { CID } from "ipfs-http-client";
 import type { IPFS } from "ipfs-core-types";
@@ -11,9 +11,9 @@ import { contractABI } from "./abi";
 export class IpfsPlugin extends Web3PluginBase {
   public pluginNamespace: string;
   private ipfsClient: IPFS;
-  private web3: any;
+  private web3: Web3;
   private signerPrivateKey: string;
-  private contract: any;
+  private contract: Contract<typeof contractABI>;
 
   public constructor(
     options: {
@@ -36,43 +36,45 @@ export class IpfsPlugin extends Web3PluginBase {
     this.signerPrivateKey = options.signerPrivateKey ?? '';
     this.web3 = new Web3('https://endpoints.omniatech.io/v1/eth/sepolia/public');
     this.contract = new this.web3.eth.Contract(
-      contractABI,
-      '0xA683BF985BC560c5dc99e8F33f3340d1e53736EB',
+      options.contractAbi || contractABI,
+      options.contractAddress || '0xA683BF985BC560c5dc99e8F33f3340d1e53736EB',
     );
   }
 
-  public test(param: string): void {
-    console.log(param);
-  }
-
   public async uploadFile(filePath: string): Promise<CID> {
-    const file = fs.readFileSync(filePath);
-    console.log(file.toString());
-    const result = await this.ipfsClient.add(file);
-    console.log("Added file CID:", result.cid.toString());
-    return result.cid;
+    try {
+      const file = fs.readFileSync(filePath);
+      const result = await this.ipfsClient.add(file);
+      console.log("Added file CID:", result.cid.toString());
+      return result.cid;
+    } catch (error) {
+      throw new Error("Error uploading file to IPFS:");
+    }
   }
 
   public async storeCID(cid: string) {
-
-    const account = this.web3.eth.accounts.privateKeyToAccount(this.signerPrivateKey as any);
-    this.web3.eth.accounts.wallet.add(account);
-    const fromAddress = account.address;
-    return this.contract.methods.store(cid.toString()).send({ from: fromAddress });
+    try {
+      const account = this.web3.eth.accounts.privateKeyToAccount(this.signerPrivateKey);
+      this.web3.eth.accounts.wallet.add(account);
+      const fromAddress = account.address;
+      return this.contract.methods.store(cid).send({ from: fromAddress });
+    } catch (error) {
+      throw new Error("Error storing CID on Ethereum blockchain:");
+    }
   }
 
   public async listCIDs(ethereumAddress: string) {
-    const events = await this.contract.getPastEvents('ALLEVENTS', {
-      filter: { owner: ethereumAddress },
-      fromBlock: 5064000,
-      toBlock: 'latest'
-    });
+    try {
+      const events = await this.contract.getPastEvents('CIDStored', {
+        filter: { owner: ethereumAddress },
+        fromBlock: 5064000,
+        toBlock: 'latest'
+      });
 
-    for (const event of events) {
-      console.debug((event as any));
+      return events.map(event => (event as any).returnValues);
+    } catch (error) {
+      throw new Error("Error retrieving CIDs:");
     }
-
-    return events;
   }
 }
 
@@ -82,3 +84,4 @@ declare module "web3" {
     ipfs: IpfsPlugin;
   }
 }
+
