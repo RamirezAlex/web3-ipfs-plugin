@@ -1,6 +1,6 @@
 import Web3, { Contract } from "web3";
 import { Web3PluginBase } from "web3";
-import type { ContractAbi } from "web3";
+import type { ContractAbi, TransactionReceipt, EventLog } from "web3";
 import type { CID } from "ipfs-http-client";
 import type { IPFS } from "ipfs-core-types";
 import * as fs from "fs";
@@ -52,7 +52,7 @@ export class IpfsPlugin extends Web3PluginBase {
     }
   }
 
-  public async storeCID(cid: string) {
+  public async storeCID(cid: string): Promise<TransactionReceipt> {
     try {
       const account = this.web3.eth.accounts.privateKeyToAccount(this.signerPrivateKey);
       this.web3.eth.accounts.wallet.add(account);
@@ -63,7 +63,7 @@ export class IpfsPlugin extends Web3PluginBase {
     }
   }
 
-  public async listCIDs(ethereumAddress: string) {
+  public async listCIDs(ethereumAddress: string): Promise<string[]> {
     try {
       const events = await this.contract.getPastEvents('CIDStored', {
         filter: { owner: ethereumAddress },
@@ -71,7 +71,7 @@ export class IpfsPlugin extends Web3PluginBase {
         toBlock: 'latest'
       });
 
-      return events.map(event => (event as any).returnValues);
+      return events.map(event => ((event as EventLog).returnValues.cid) as string);
     } catch (error) {
       throw new Error("Error retrieving CIDs:");
     }

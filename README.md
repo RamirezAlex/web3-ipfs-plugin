@@ -1,34 +1,60 @@
-web3-plugin-template
-===========
+# IpfsPlugin for Web3.js 4.x
 
-This is a template for creating a repository for web3.js plugin.
+## Overview
 
-How to use
-------------
+`IpfsPlugin` is a custom [web3.js](https://github.com/web3/web3.js) 4.x plugin designed to upload files to IPFS and store their CID in Ethereum blockchain
+## Features
 
-1. Create your project out of this template.
+- **File Uploading:** Upload files to an IPFS node and retrieve their CIDs.
+- **Store CIDs on Ethereum:** Store the file CIDs on the Ethereum blockchain, allowing for decentralized and verifiable file tracking.
+- **Retrieve Event Logs:** Fetch logs from Ethereum to track stored CIDs.
+- **Ease of Integration:** Designed to integrate seamlessly with existing Web3.js setups.
 
-    You can do so by pressing on `Use this template` on the above right corner and then select `Create new Repositor`. Please, use the convention `web3-plugin-<name>` for your repo name.
-2. Update the `name` and `description` fileds at your `package.json`.
+## Installation
 
-    Chose a name like: `@<organization>/web3-plugin-<name>` (or the less better `web3-plugin-<name>`).
-3. Update the code inside `src` folder.
+To install the plugin, use npm or yarn:
 
-4. Modify and add tests inside `test` folder.
+```bash
+npm install web3-ipfs-plugin
+```
 
-5. Publish to the npm registry.
+## Usage
 
-    You can publish with something like: `yarn build && npm publish --access public`.
+1. **Initialization:**
 
-Contributing
-------------
+Import `IpfsPlugin` and `Web3`:
 
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
+```javascript
+import Web3 from "web3";
+import { IpfsPlugin } from "web3-ipfs-plugin";
+```
 
-Please make sure to update tests as appropriate.
+Initialize Web3 and register the IpfsPlugin:
 
-License
--------
+```javascript
+const web3 = new Web3('https://<ethereum-node-url>');
+web3.registerPlugin(new IpfsPlugin({
+  signerPrivateKey: '<Your-Private-Key>',
+  providerUrl: 'https://<ethereum-node-url>',
+}));
+```
 
-[MIT](https://choosealicense.com/licenses/mit/)
+2. **Uploading a File to IPFS:**
+
+```javascript
+const cid = await web3.ipfs.uploadFile('<path-to-file>');
+console.log('File CID:', cid.toString());
+```
+
+3. **Storing a CID on Ethereum:**
+
+```javascript
+const txReceipt = await web3.ipfs.storeCID(cid.toString());
+console.log('Transaction Receipt:', txReceipt);
+```
+
+4. **Listing Stored CIDs:**
+```javascript
+const events = await web3.ipfs.listCIDs('<ethereum-address>');
+events.forEach(event => console.log(event));
+```

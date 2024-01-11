@@ -49,12 +49,15 @@ describe("IpfsPlugin Tests", () => {
       const cid = "QmQWkR3L1r7J9a1r9c9b4k3w2p8o5Vx3d1Xn1zQy1Q7wKX";
       const tx = await web3.ipfs.storeCID(cid);
       expect(tx).toBeDefined();
+      expect(tx.transactionHash).toBeDefined();
+      expect(tx.status).toBe(1n);
     }, 80000);
 
     it("should get CID from Ethereum blockchain", async () => {
       const accountAddress = "0x2805a688C804d49f565523057BE1fe79B4415912";
       const result = await web3.ipfs.listCIDs(accountAddress);
       expect(result).toBeDefined();
+      expect(result.length).toBeGreaterThan(0);
     });
   });
 });
