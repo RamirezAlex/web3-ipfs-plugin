@@ -65,9 +65,10 @@ export class IpfsPlugin extends Web3PluginBase {
 
   public async listCIDs(ethereumAddress: string): Promise<string[]> {
     try {
+      const block = await this.web3.eth.getBlock();
       const events = await this.contract.getPastEvents('CIDStored', {
         filter: { owner: ethereumAddress },
-        fromBlock: 5064000,
+        fromBlock: block.number - 100n,
         toBlock: 'latest'
       });
 
